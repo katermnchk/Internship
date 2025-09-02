@@ -1,23 +1,22 @@
 package com.innowise;
 
-public class CustomLinkedList<T> {
-        private int size;
+public class CustomLinkedList<T> implements CustomList<T> {
+    private int size;
     private Node<T> head;
     private Node<T> tail;
 
-    public CustomLinkedList() {
-        head = null;
-        tail = null;
-        size = 0;
-    }
-
+    @Override
     public int size() {
         return size;
     }
 
+    @Override
     public void addFirst(T el) {
         Node<T> newNode = new Node<>(el);
         newNode.next = head;
+        if (head != null) {
+            head.prev = newNode;
+        }
         head = newNode;
 
         if (size == 0) {
@@ -27,8 +26,10 @@ public class CustomLinkedList<T> {
         size++;
     }
 
+    @Override
     public void addLast(T el) {
         Node<T> newNode = new Node<>(el);
+        newNode.prev = tail;
         if (size == 0) {
             head = tail = newNode;
         } else {
@@ -39,6 +40,7 @@ public class CustomLinkedList<T> {
         size++;
     }
 
+    @Override
     public void add(int index, T el) {
         if (index < 0 || index > size) {
             throw new IndexOutOfBoundsException("Index out of bounds");
@@ -54,30 +56,37 @@ public class CustomLinkedList<T> {
         }
 
         Node<T> current = head;
-        for (int i = 0; i < index - 1; i++) {
+        for (int i = 0; i < index; i++) {
             current = current.next;
         }
 
         Node<T> newNode = new Node<>(el);
-        newNode.next = current.next;
-        current.next = newNode;
+        Node<T> prevNode = current.prev;
+
+        newNode.next = current;
+        newNode.prev = prevNode;
+        prevNode.next = newNode;
+        current.prev = newNode;
 
         size++;
     }
 
-
+    @Override
     public T getFirst() {
-        if (head == null)
+        if (head == null) {
             throw new IllegalStateException("List is empty");
+        }
         return head.value;
     }
 
+    @Override
     public T getLast() {
         if (tail == null)
             throw new IllegalStateException("List is empty");
         return tail.value;
     }
 
+    @Override
     public T get(int index) {
         checkIndex(index);
 
@@ -90,6 +99,7 @@ public class CustomLinkedList<T> {
         return current.value;
     }
 
+    @Override
     public T removeFirst() {
         if (head == null) {
             throw new IllegalStateException("List is empty");
@@ -97,54 +107,59 @@ public class CustomLinkedList<T> {
 
         T value = head.value;
         head = head.next;
-        if (head == null) {
+
+        if (head != null) {
+            head.prev = null;
+        } else {
             tail = null;
         }
+
         size--;
         return value;
     }
 
+    @Override
     public T removeLast() {
         if (head == null) {
             throw new IllegalStateException("List is empty");
         }
 
-        if (head == tail) {
-            T value = head.value;
-            head = tail = null;
-            size = 0;
-            return value;
-        }
-
-        Node<T> current = head;
-        while (current.next != tail) {
-            current = current.next;
-        }
-
         T value = tail.value;
-        tail = current;
-        tail.next = null;
+        tail = tail.prev;
+
+        if (tail != null) {
+            tail.next = null;
+        } else {
+            head = null;
+        }
+
         size--;
         return value;
     }
 
+    @Override
     public T remove(int index) {
         checkIndex(index);
 
         if (index == 0) {
             return removeFirst();
         }
+        if (index == size - 1) {
+            return removeLast();
+        }
 
         Node<T> current = head;
-        for (int i = 0; i < index - 1; i++) {
+        for (int i = 0; i < index; i++) {
             current = current.next;
         }
 
-        T value = current.next.value;
-        if (current.next == tail) {
-            tail = current;
-        }
-        current.next = current.next.next;
+        T value = current.value;
+        Node<T> prevNode = current.prev;
+        Node<T> nextNode = current.next;
+
+        prevNode.next = nextNode;
+        nextNode.prev = prevNode;
+
         size--;
         return value;
     }
@@ -171,12 +186,12 @@ public class CustomLinkedList<T> {
     }
 
     private static class Node<T> {
-        T value;
+        final T value;
+        Node<T> prev;
         Node<T> next;
 
         public Node(T value) {
             this.value = value;
-            this.next = null;
         }
     }
 }
