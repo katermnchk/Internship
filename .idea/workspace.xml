@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cafec126-a991-4090-b086-e848953f3b23" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="a15afff7-f8f4-4991-bbff-3b857a4ef06f" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -60,7 +58,6 @@
     "JUnit.CustomLinkedListTest.givenListWithElements_WhenToStringCalled_ThenCorrectStringRepresentation.executor": "Run",
     "JUnit.OrderMetricsTest.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "#2 on linkedlist-task",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/job/internship/src",
     "node.js.detected.package.eslint": "true",
