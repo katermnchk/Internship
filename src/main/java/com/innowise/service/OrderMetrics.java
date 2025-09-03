@@ -12,18 +12,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class OrderMetrics {
-    //List of unique cities where orders came from
+
     public static Set<String> getUniqueCities(List<Order> orders) {
         return orders.stream()
                 .map(o -> o.getCustomer().getCity())
                 .collect(Collectors.toSet());
     }
 
-    //Total income for all completed orders
     public static double getTotalIncome(List<Order> orders) {
         return orders.stream()
                 .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
                 .flatMap(o -> o.getItems().stream())
+                .filter(i -> i.getQuantity() > 0)
                 .mapToDouble(i -> i.getQuantity() * i.getPrice())
                 .sum();
     }
@@ -31,6 +31,7 @@ public class OrderMetrics {
     public static String getMostPopularProduct(List<Order> orders) {
         return orders.stream()
                 .flatMap(o -> o.getItems().stream())
+                .filter(i -> i.getQuantity() > 0)
                 .collect(Collectors.groupingBy(OrderItem::getProductName, Collectors.summingInt(OrderItem::getQuantity)))
                 .entrySet().stream()
                 .max(Map.Entry.comparingByValue())
@@ -38,17 +39,16 @@ public class OrderMetrics {
                 .orElse(null);
     }
 
-    //Average check for successfully delivered orders
     public static double getAverageCheck(List<Order> orders) {
         return orders.stream()
                 .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
                 .mapToDouble(o -> o.getItems().stream()
+                        .filter(i -> i.getQuantity() > 0)
                         .mapToDouble(i -> i.getPrice() * i.getQuantity()).sum())
                 .average()
                 .orElse(0.0);
     }
 
-    //Customers who have more than 5 orders
     public static List<Customer> getCustomers(List<Order> orders) {
         return orders.stream()
                 .collect(Collectors.groupingBy(Order::getCustomer, Collectors.counting()))

@@ -3,17 +3,20 @@ package com.innowise.service;
 import com.innowise.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class OrderMetricsTest {
 
-    private List<Order> orders;
     private Customer customer1;
     private Customer customer2;
     private Customer customer3;
@@ -26,80 +29,89 @@ class OrderMetricsTest {
                 LocalDateTime.now().minusYears(1), 18, "Bobruisk");
         customer3 = new Customer("C3", "Anna", "anna@mail.com",
                 LocalDateTime.now().minusYears(3), 20, "Warsaw");
+    }
 
-        orders = new ArrayList<>();
+    @Test
+    void givenOrders_WhenGetUniqueCities_ThenReturnAllCities() {
+        List<Order> orders = List.of(
+                new Order("O1", LocalDateTime.now(), customer1, List.of(), OrderStatus.NEW),
+                new Order("O2", LocalDateTime.now(), customer2, List.of(), OrderStatus.NEW),
+                new Order("O3", LocalDateTime.now(), customer3, List.of(), OrderStatus.NEW)
+        );
 
-        OrderItem dress = new OrderItem("Dress", 1, 500.0, Category.CLOTHING);
-        OrderItem book = new OrderItem("Book", 3, 20.0, Category.BOOKS);
-        OrderItem laptop = new OrderItem("MacBook", 2, 30.0, Category.ELECTRONICS);
+        Set<String> cities = OrderMetrics.getUniqueCities(orders);
 
-        orders.add(new Order("O1", LocalDateTime.now().minusDays(5), customer1,
-                List.of(dress, book), OrderStatus.DELIVERED));
-        orders.add(new Order("O2", LocalDateTime.now().minusDays(4), customer2,
-                List.of(laptop, book), OrderStatus.DELIVERED));
+        assertAll(
+                () -> assertEquals(3, cities.size()),
+                () -> assertTrue(cities.contains("Minsk")),
+                () -> assertTrue(cities.contains("Bobruisk")),
+                () -> assertTrue(cities.contains("Warsaw"))
+        );
+    }
 
-        //order not delivered yet
-        orders.add(new Order("O3", LocalDateTime.now().minusDays(3), customer1,
-                List.of(book), OrderStatus.NEW));
+    @ParameterizedTest
+    @MethodSource("provideOrdersForIncome")
+    void givenOrders_WhenGetTotalIncome_ThenReturnCorrectSum(List<Order> orders, double expectedIncome) {
+        assertEquals(expectedIncome, OrderMetrics.getTotalIncome(orders));
+    }
 
-        //cancelled order
-        orders.add(new Order("O4", LocalDateTime.now().minusDays(2), customer3,
-                List.of(new OrderItem("Laptop", 1, 1000.0, Category.ELECTRONICS)), OrderStatus.CANCELLED));
+    @ParameterizedTest
+    @MethodSource("provideOrdersForMostPopularProduct")
+    void givenOrders_WhenGetMostPopularProduct_ThenReturnCorrectProduct(List<Order> orders, Set<String> expectedProducts) {
+        String popular = OrderMetrics.getMostPopularProduct(orders);
 
-        //add more orders for frequent customer
-        for (int i = 5; i <= 10; i++) {
-            orders.add(new Order("O" + i, LocalDateTime.now(),
-                    customer1, List.of(new OrderItem("Book", 1, 20.0, Category.BOOKS)), OrderStatus.DELIVERED));
+        if (expectedProducts.isEmpty()) {
+            assertNull(popular);
+        } else {
+            assertAll(
+                    () -> assertNotNull(popular),
+                    () ->  assertTrue(expectedProducts.contains(popular))
+            );
         }
     }
 
-    @Test
-    void testGetUniqueCities() {
-        Set<String> cities = OrderMetrics.getUniqueCities(orders);
-        assertEquals(Set.of("Minsk", "Bobruisk", "Warsaw"), cities);
+    @ParameterizedTest
+    @MethodSource("provideOrdersForAverageCheck")
+    void givenOrders_WhenGetAverageCheck_ThenReturnCorrectValue(List<Order> orders, double expectedAvg) {
+        assertEquals(expectedAvg, OrderMetrics.getAverageCheck(orders));
     }
 
     @Test
-    void testGetTotalIncome() {
-        double totalIncome = OrderMetrics.getTotalIncome(orders);
-        //O1=500+3*20=560, O2=2*30+3*20=120, O5-O10=6*20=120, total 800
-        assertEquals(800.0, totalIncome);
-    }
+    void givenOrders_WhenGetCustomersWithMoreThanFiveOrders_ThenReturnCorrectCustomers() {
+        List<Order> orders = new ArrayList<>();
 
-    @Test
-    void testGetMostPopularProduct() {
-        String mostPopular = OrderMetrics.getMostPopularProduct(orders);
-        //Book 3+3+6=12, Dress 1, MacBook 2, Laptop 1
-        assertEquals("Book", mostPopular);
-    }
+        for (int i = 0; i < 6; i++) {
+            orders.add(new Order("O" + (i + 1), LocalDateTime.now(), customer1,
+                    List.of(new OrderItem("Book", 1, 20.0, Category.BOOKS)), OrderStatus.DELIVERED));
+        }
 
-    @Test
-    void testGetAverageCheck() {
-        double avgCheck = OrderMetrics.getAverageCheck(orders);
-        //delivered orders: O1=560, O2=120, O5-O10=120 -> avg=800/8=100
-        assertEquals(100.0, avgCheck);
-    }
+        orders.add(new Order("O7", LocalDateTime.now(), customer2,
+                List.of(new OrderItem("Phone", 1, 500.0, Category.ELECTRONICS)), OrderStatus.DELIVERED));
 
-    @Test
-    void testGetCustomers() {
+
         List<Customer> frequentCustomers = OrderMetrics.getCustomers(orders);
-        //customer1 has 7 orders -> frequent
-        assertEquals(1, frequentCustomers.size());
-        assertEquals("Kate", frequentCustomers.get(0).getName());
+
+        assertAll(
+                () -> assertEquals(1, frequentCustomers.size()),
+                () -> assertEquals("Kate", frequentCustomers.get(0).getName())
+        );
     }
 
     @Test
-    void testEmptyOrders() {
-        List<Order> empty = new ArrayList<>();
-        assertTrue(OrderMetrics.getUniqueCities(empty).isEmpty());
-        assertEquals(0.0, OrderMetrics.getTotalIncome(empty));
-        assertNull(OrderMetrics.getMostPopularProduct(empty));
-        assertEquals(0.0, OrderMetrics.getAverageCheck(empty));
-        assertTrue(OrderMetrics.getCustomers(empty).isEmpty());
+    void givenOrders_WhenGetOrdersEmpty_ThenReturnZero() {
+        List<Order> empty = Collections.emptyList();
+
+        assertAll(
+                () -> assertTrue(OrderMetrics.getUniqueCities(empty).isEmpty()),
+                () -> assertEquals(0.0, OrderMetrics.getTotalIncome(empty)),
+                () -> assertNull(OrderMetrics.getMostPopularProduct(empty)),
+                () -> assertEquals(0.0, OrderMetrics.getAverageCheck(empty)),
+                () -> assertTrue(OrderMetrics.getCustomers(empty).isEmpty())
+        );
     }
 
     @Test
-    void testNoDeliveredOrders() {
+    void givenOrdersWithoutDelivered_WhenGetMetrics_ThenReturnZero() {
         List<Order> newOrders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1,
                         List.of(new OrderItem("Book", 1, 20.0, Category.BOOKS)),
@@ -108,12 +120,15 @@ class OrderMetricsTest {
                         List.of(new OrderItem("Phone", 1, 500.0, Category.ELECTRONICS)),
                         OrderStatus.CANCELLED)
         );
-        assertEquals(0.0, OrderMetrics.getTotalIncome(newOrders));
-        assertEquals(0.0, OrderMetrics.getAverageCheck(newOrders));
+
+        assertAll(
+                () -> assertEquals(0.0, OrderMetrics.getTotalIncome(newOrders)),
+                () -> assertEquals(0.0, OrderMetrics.getAverageCheck(newOrders))
+        );
     }
 
     @Test
-    void testTieForMostPopularProduct() {
+    void givenOrdersWithTie_WhenGetMostPopularProduct_ThenReturnOneOfThem() {
         List<Order> tiedOrders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1, List.of(
                         new OrderItem("Book", 2, 20.0, Category.BOOKS),
@@ -121,6 +136,94 @@ class OrderMetricsTest {
                 ), OrderStatus.DELIVERED)
         );
         String popular = OrderMetrics.getMostPopularProduct(tiedOrders);
-        assertTrue(popular.equals("Book") || popular.equals("T-Shirt"));
+
+        assertAll(
+                () -> assertNotNull(popular),
+                () -> assertTrue(Set.of("Book", "T-Shirt").contains(popular))
+        );
+    }
+
+    @Test
+    void givenOrderWithoutItems_WhenGetMetrics_ThenReturnDefaults() {
+        List<Order> orders = List.of(
+                new Order("O1", LocalDateTime.now(), customer1, Collections.emptyList(), OrderStatus.DELIVERED)
+        );
+
+        assertAll(
+                () -> assertEquals(0.0, OrderMetrics.getTotalIncome(orders)),
+                () -> assertEquals(0.0, OrderMetrics.getAverageCheck(orders)),
+                () -> assertNull(OrderMetrics.getMostPopularProduct(orders))
+        );
+    }
+
+    @Test
+    void givenOrdersWithZeroQuantity_WhenGetMetrics_ThenIgnoreSuchItems() {
+        List<Order> orders = List.of(
+                new Order("O1", LocalDateTime.now(), customer1,
+                        List.of(new OrderItem("Book", 0, 20.0, Category.BOOKS)),
+                        OrderStatus.DELIVERED)
+        );
+
+        assertAll (
+                () -> assertEquals(0.0, OrderMetrics.getTotalIncome(orders)),
+                () -> assertEquals(0.0, OrderMetrics.getAverageCheck(orders)),
+                () -> assertNull(OrderMetrics.getMostPopularProduct(orders))
+        );
+    }
+
+
+    private static Stream<Object[]> provideOrdersForIncome() {
+        return Stream.of(
+                new Object[]{Collections.emptyList(), 0.0},
+                new Object[]{List.of(
+                        new Order("O1", LocalDateTime.now(),
+                                new Customer("C1","Kate","kate@mail.com", LocalDateTime.now(), 19,"Minsk"),
+                                List.of(new OrderItem("Book",2,20.0,Category.BOOKS)), OrderStatus.DELIVERED)
+                ), 40.0},
+                new Object[]{List.of(
+                        new Order("O1", LocalDateTime.now(),
+                                new Customer("C1","Kate","kate@mail.com", LocalDateTime.now(), 19,"Minsk"),
+                                List.of(new OrderItem("Book",2,20.0,Category.BOOKS)), OrderStatus.DELIVERED),
+                        new Order("O2", LocalDateTime.now(),
+                                new Customer("C2","Arseniy","senya@mail.com", LocalDateTime.now(),18,"Bobruisk"),
+                                List.of(new OrderItem("Dress",1,50.0,Category.CLOTHING)), OrderStatus.DELIVERED)
+                ), 90.0}
+        );
+    }
+
+    private static Stream<Object[]> provideOrdersForMostPopularProduct() {
+        return Stream.of(
+                new Object[]{Collections.emptyList(), Collections.emptySet()},
+                new Object[]{List.of(
+                        new Order("O1", LocalDateTime.now(),
+                                new Customer("C1","Kate","kate@mail.com",LocalDateTime.now(),19,"Minsk"),
+                                List.of(new OrderItem("Book",2,20.0,Category.BOOKS)), OrderStatus.DELIVERED)
+                ), Set.of("Book")},
+                new Object[]{List.of(
+                        new Order("O1", LocalDateTime.now(),
+                                new Customer("C1","Kate","kate@mail.com",LocalDateTime.now(),19,"Minsk"),
+                                List.of(new OrderItem("Book",2,20.0,Category.BOOKS),
+                                        new OrderItem("T-Shirt",2,30.0,Category.CLOTHING)), OrderStatus.DELIVERED)
+                ), Set.of("Book","T-Shirt")}
+        );
+    }
+
+    private static Stream<Object[]> provideOrdersForAverageCheck() {
+        return Stream.of(
+                new Object[]{Collections.emptyList(), 0.0},
+                new Object[]{List.of(
+                        new Order("O1", LocalDateTime.now(),
+                                new Customer("C1","Kate","kate@mail.com", LocalDateTime.now(),19,"Minsk"),
+                                List.of(new OrderItem("Book",2,20.0,Category.BOOKS)), OrderStatus.DELIVERED)
+                ), 40.0},
+                new Object[]{List.of(
+                        new Order("O1", LocalDateTime.now(),
+                                new Customer("C1","Kate","kate@mail.com", LocalDateTime.now(),19,"Minsk"),
+                                List.of(new OrderItem("Book",2,20.0,Category.BOOKS)), OrderStatus.DELIVERED),
+                        new Order("O2", LocalDateTime.now(),
+                                new Customer("C2","Arseniy","senya@mail.com", LocalDateTime.now(),18,"Bobruisk"),
+                                List.of(new OrderItem("Dress",1,60.0,Category.CLOTHING)), OrderStatus.DELIVERED)
+                ), 50.0} // (40+60)/2=50
+        );
     }
 }
