@@ -11,19 +11,32 @@ class CustomLinkedListTest {
 
     @ParameterizedTest
     @CsvSource({
-            "addFirst, 1, 15, 15, 1",
-            "addLast, 2, 25, 2, 25"
+            "1, 15, 15, 1",
     })
-    void givenEmptyList_WhenAddElements_ThenSizeAndElementsAreCorrect
-            (String method, int value1, int value2, int expectedFirst, int expectedLast) {
+    void givenEmptyList_WhenAddFirstElements_ThenSizeAndElementsAreCorrect
+            (int value1, int value2, int expectedFirst, int expectedLast) {
         CustomList<Integer> list = new CustomLinkedList<>();
-        if (method.equals("addFirst")) {
-            list.addFirst(value1);
-            list.addFirst(value2);
-        } else {
-            list.addLast(value1);
-            list.addLast(value2);
-        }
+
+        list.addFirst(value1);
+        list.addFirst(value2);
+
+        assertAll(
+                () -> assertEquals(2, list.size()),
+                () -> assertEquals(expectedFirst, list.getFirst()),
+                () -> assertEquals(expectedLast, list.getLast())
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "2, 25, 2, 25"
+    })
+    void givenEmptyList_WhenAddLastElements_ThenSizeAndElementsAreCorrect
+            (int value1, int value2, int expectedFirst, int expectedLast) {
+        CustomList<Integer> list = new CustomLinkedList<>();
+
+        list.addLast(value1);
+        list.addLast(value2);
 
         assertAll(
                 () -> assertEquals(2, list.size()),

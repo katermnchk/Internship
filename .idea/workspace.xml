@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a15afff7-f8f4-4991-bbff-3b857a4ef06f" name="Changes" comment="" />
+    <list default="true" id="0aaafeef-bc41-47dd-b377-2b5f27873be8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -58,6 +60,7 @@
     "JUnit.CustomLinkedListTest.givenListWithElements_WhenToStringCalled_ThenCorrectStringRepresentation.executor": "Run",
     "JUnit.OrderMetricsTest.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "#2 on linkedlist-task",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/job/internship/src",
     "node.js.detected.package.eslint": "true",
@@ -184,7 +187,7 @@
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="cafec126-a991-4090-b086-e848953f3b23" name="Changes" comment="" />
+      <changelist id="0aaafeef-bc41-47dd-b377-2b5f27873be8" name="Changes" comment="" />
       <created>1756754033677</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
@@ -195,6 +198,7 @@
       <workItem from="1756824862391" duration="167000" />
       <workItem from="1756837442382" duration="21000" />
       <workItem from="1756845413071" duration="7067000" />
+      <workItem from="1756921837843" duration="326000" />
     </task>
     <servers />
   </component>
