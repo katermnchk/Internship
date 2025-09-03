@@ -12,8 +12,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
+import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -59,7 +63,7 @@ class OrderMetricsTest {
 
     @ParameterizedTest
     @MethodSource("provideOrdersForMostPopularProduct")
-    void givenOrders_WhenGetMostPopularProduct_ThenReturnCorrectProduct(List<Order> orders, Set<String> expectedProducts) {
+    void givenOrders_WhenGetMostPopularProduct_ThenReturnCorrectProduct(List<Order> orders, Set <String> expectedProducts) {
 
         if (expectedProducts.isEmpty()) {
             assertThrows(NoSuchElementException.class, () -> OrderMetrics.getMostPopularProduct(orders));
