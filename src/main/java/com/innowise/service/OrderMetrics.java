@@ -8,21 +8,24 @@ import com.innowise.model.OrderItem;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 public class OrderMetrics {
 
-    public static Set<String> getUniqueCities(List<Order> orders) {
+    public static List<String> getUniqueCities(List<Order> orders) {
         return orders.stream()
-                .map(o -> o.getCustomer().getCity())
-                .collect(Collectors.toSet());
+                .map(Order::getCustomer)
+                .map(Customer::getCity)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     public static double getTotalIncome(List<Order> orders) {
         return orders.stream()
                 .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
-                .flatMap(o -> o.getItems().stream())
+                .map(Order::getItems)
+                .flatMap(List::stream)
                 .filter(i -> i.getQuantity() > 0)
                 .mapToDouble(i -> i.getQuantity() * i.getPrice())
                 .sum();
@@ -30,13 +33,14 @@ public class OrderMetrics {
 
     public static String getMostPopularProduct(List<Order> orders) {
         return orders.stream()
-                .flatMap(o -> o.getItems().stream())
+                .map(Order::getItems)
+                .flatMap(List::stream)
                 .filter(i -> i.getQuantity() > 0)
                 .collect(Collectors.groupingBy(OrderItem::getProductName, Collectors.summingInt(OrderItem::getQuantity)))
                 .entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
-                .orElse(null);
+                .orElseThrow(() -> new NoSuchElementException("There is no product with positive quantity"));
     }
 
     public static double getAverageCheck(List<Order> orders) {

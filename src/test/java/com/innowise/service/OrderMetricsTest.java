@@ -1,16 +1,18 @@
 package com.innowise.service;
 
-import com.innowise.model.*;
+import com.innowise.model.Category;
+import com.innowise.model.Customer;
+import com.innowise.model.Order;
+import com.innowise.model.OrderItem;
+import com.innowise.model.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,13 +35,13 @@ class OrderMetricsTest {
 
     @Test
     void givenOrders_WhenGetUniqueCities_ThenReturnAllCities() {
-        List<Order> orders = List.of(
+        var orders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1, List.of(), OrderStatus.NEW),
                 new Order("O2", LocalDateTime.now(), customer2, List.of(), OrderStatus.NEW),
                 new Order("O3", LocalDateTime.now(), customer3, List.of(), OrderStatus.NEW)
         );
 
-        Set<String> cities = OrderMetrics.getUniqueCities(orders);
+        var cities = OrderMetrics.getUniqueCities(orders);
 
         assertAll(
                 () -> assertEquals(3, cities.size()),
@@ -58,11 +60,11 @@ class OrderMetricsTest {
     @ParameterizedTest
     @MethodSource("provideOrdersForMostPopularProduct")
     void givenOrders_WhenGetMostPopularProduct_ThenReturnCorrectProduct(List<Order> orders, Set<String> expectedProducts) {
-        String popular = OrderMetrics.getMostPopularProduct(orders);
 
         if (expectedProducts.isEmpty()) {
-            assertNull(popular);
+            assertThrows(NoSuchElementException.class, () -> OrderMetrics.getMostPopularProduct(orders));
         } else {
+            String popular = OrderMetrics.getMostPopularProduct(orders);
             assertAll(
                     () -> assertNotNull(popular),
                     () ->  assertTrue(expectedProducts.contains(popular))
@@ -76,11 +78,17 @@ class OrderMetricsTest {
         assertEquals(expectedAvg, OrderMetrics.getAverageCheck(orders));
     }
 
-    @Test
-    void givenOrders_WhenGetCustomersWithMoreThanFiveOrders_ThenReturnCorrectCustomers() {
+    @ParameterizedTest
+    @CsvSource ({
+            "6, true",
+            "5, false",
+            "7, true",
+            "4, false"
+    })
+    void givenOrders_WhenGetCustomersWithMoreThanFiveOrders_ThenReturnCorrectCustomers(int orderCount, boolean expectedPresent) {
         List<Order> orders = new ArrayList<>();
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < orderCount; i++) {
             orders.add(new Order("O" + (i + 1), LocalDateTime.now(), customer1,
                     List.of(new OrderItem("Book", 1, 20.0, Category.BOOKS)), OrderStatus.DELIVERED));
         }
@@ -89,22 +97,19 @@ class OrderMetricsTest {
                 List.of(new OrderItem("Phone", 1, 500.0, Category.ELECTRONICS)), OrderStatus.DELIVERED));
 
 
-        List<Customer> frequentCustomers = OrderMetrics.getCustomers(orders);
+        var frequentCustomers = OrderMetrics.getCustomers(orders);
 
-        assertAll(
-                () -> assertEquals(1, frequentCustomers.size()),
-                () -> assertEquals("Kate", frequentCustomers.get(0).getName())
-        );
+        assertEquals(expectedPresent, frequentCustomers.stream().anyMatch(c -> c.getName().equals("Kate")));
     }
 
     @Test
     void givenOrders_WhenGetOrdersEmpty_ThenReturnZero() {
         List<Order> empty = Collections.emptyList();
 
-        assertAll(
+        assertAll (
                 () -> assertTrue(OrderMetrics.getUniqueCities(empty).isEmpty()),
                 () -> assertEquals(0.0, OrderMetrics.getTotalIncome(empty)),
-                () -> assertNull(OrderMetrics.getMostPopularProduct(empty)),
+                () -> assertThrows(NoSuchElementException.class, () -> OrderMetrics.getMostPopularProduct(empty)),
                 () -> assertEquals(0.0, OrderMetrics.getAverageCheck(empty)),
                 () -> assertTrue(OrderMetrics.getCustomers(empty).isEmpty())
         );
@@ -112,7 +117,7 @@ class OrderMetricsTest {
 
     @Test
     void givenOrdersWithoutDelivered_WhenGetMetrics_ThenReturnZero() {
-        List<Order> newOrders = List.of(
+        var newOrders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1,
                         List.of(new OrderItem("Book", 1, 20.0, Category.BOOKS)),
                         OrderStatus.NEW),
@@ -129,7 +134,7 @@ class OrderMetricsTest {
 
     @Test
     void givenOrdersWithTie_WhenGetMostPopularProduct_ThenReturnOneOfThem() {
-        List<Order> tiedOrders = List.of(
+        var tiedOrders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1, List.of(
                         new OrderItem("Book", 2, 20.0, Category.BOOKS),
                         new OrderItem("T-Shirt", 2, 30.0, Category.CLOTHING)
@@ -137,7 +142,7 @@ class OrderMetricsTest {
         );
         String popular = OrderMetrics.getMostPopularProduct(tiedOrders);
 
-        assertAll(
+        assertAll (
                 () -> assertNotNull(popular),
                 () -> assertTrue(Set.of("Book", "T-Shirt").contains(popular))
         );
@@ -145,20 +150,20 @@ class OrderMetricsTest {
 
     @Test
     void givenOrderWithoutItems_WhenGetMetrics_ThenReturnDefaults() {
-        List<Order> orders = List.of(
+        var orders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1, Collections.emptyList(), OrderStatus.DELIVERED)
         );
 
-        assertAll(
+        assertAll (
                 () -> assertEquals(0.0, OrderMetrics.getTotalIncome(orders)),
                 () -> assertEquals(0.0, OrderMetrics.getAverageCheck(orders)),
-                () -> assertNull(OrderMetrics.getMostPopularProduct(orders))
+                () -> assertThrows(NoSuchElementException.class, () -> OrderMetrics.getMostPopularProduct(orders))
         );
     }
 
     @Test
     void givenOrdersWithZeroQuantity_WhenGetMetrics_ThenIgnoreSuchItems() {
-        List<Order> orders = List.of(
+        var orders = List.of(
                 new Order("O1", LocalDateTime.now(), customer1,
                         List.of(new OrderItem("Book", 0, 20.0, Category.BOOKS)),
                         OrderStatus.DELIVERED)
@@ -167,7 +172,7 @@ class OrderMetricsTest {
         assertAll (
                 () -> assertEquals(0.0, OrderMetrics.getTotalIncome(orders)),
                 () -> assertEquals(0.0, OrderMetrics.getAverageCheck(orders)),
-                () -> assertNull(OrderMetrics.getMostPopularProduct(orders))
+                () -> assertThrows(NoSuchElementException.class, () -> OrderMetrics.getMostPopularProduct(orders))
         );
     }
 
